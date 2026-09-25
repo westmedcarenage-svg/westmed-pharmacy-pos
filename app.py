@@ -4,13 +4,16 @@ import sqlite3, os, csv, io
 from datetime import datetime
 from functools import wraps
 from v3 import register_v3
+from v5 import register_v5
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.environ.get('WESTMED_DB_PATH', os.path.join(BASE_DIR, 'westmed_pos.db'))
+DEFAULT_DB = '/data/westmed_v5.db' if os.path.isdir('/data') else os.path.join(BASE_DIR, 'westmed_pos.db')
+DB_PATH = os.environ.get('WESTMED_DB_PATH', DEFAULT_DB)
 SECRET_KEY = os.environ.get('WESTMED_SECRET_KEY', 'CHANGE-ME-BEFORE-PRODUCTION')
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+app.config['WESTMED_DB_PATH'] = DB_PATH
 
 SCHEMA = '''
 PRAGMA foreign_keys = ON;
@@ -322,6 +325,7 @@ def health(): return jsonify(status='ok',app='Westmed Pharmacy POS V2')
 
 init_db()
 register_v3(app, db, audit)
+register_v5(app, db, audit)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT','5000')), debug=False)
