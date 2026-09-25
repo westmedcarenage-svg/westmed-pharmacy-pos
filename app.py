@@ -166,22 +166,32 @@ def db():
     return conn
 
 def init_db():
-    conn = db(); conn.executescript(SCHEMA)
-    conn.execute("INSERT OR IGNORE INTO stores(code,name) VALUES('CAR','Carenage Pharmacy')")
-    conn.execute("INSERT OR IGNORE INTO stores(code,name) VALUES('ST2','Store 2')")
-    store = conn.execute("SELECT id FROM stores WHERE code='CAR'").fetchone()['id']
-    if not conn.execute("SELECT 1 FROM users WHERE username='admin'").fetchone():
-        conn.execute("INSERT INTO users(username,full_name,role,password_hash,default_store_id,created_at) VALUES(?,?,?,?,?,?)",
-                     ('admin','Westmed Administrator','admin',generate_password_hash(os.environ.get('ADMIN_PASSWORD','CHANGE-ME')),store,datetime.utcnow().isoformat()))
-    demo_products = [
-        ('PCM500','100000000001','Paracetamol 500 mg','500 mg','Tablet','Analgesics',0,0,0.35,1.50,30),
-        ('AMX500','100000000002','Amoxicillin 500 mg','500 mg','Capsule','Antibiotics',1,0,0.90,3.50,20),
-        ('LOR10','100000000003','Loratadine 10 mg','10 mg','Tablet','Allergy',0,0,0.50,2.25,15)
-    ]
-    for p in demo_products:
-        conn.execute('''INSERT OR IGNORE INTO products(sku,barcode,name,strength,dosage_form,category,prescription_required,controlled,cost,retail_price,reorder_level)
-                        VALUES(?,?,?,?,?,?,?,?,?,?,?)''', p)
-    conn.commit(); conn.close()
+    conn = db()
+    try:
+        conn.executescript(SCHEMA)
+        conn.execute("INSERT OR IGNORE INTO stores(code,name) VALUES('CAR','Carenage Pharmacy')")
+        conn.execute("INSERT OR IGNORE INTO stores(code,name) VALUES('ST2','Store 2')")
+        store_row = conn.execute("SELECT id FROM stores WHERE code='CAR'").fetchone()
+        store = store_row['id'] if store_row else 1
+        if not conn.execute("SELECT 1 FROM users WHERE username='admin'").fetchone():
+            conn.execute("INSERT INTO users(username,full_name,role,password_hash,default_store_id,created_at) VALUES(?,?,?,?,?,?)",
+                         ('admin','Westmed Administrator','admin',generate_password_hash(os.environ.get('ADMIN_PASSWORD','CHANGE-ME')),store,datetime.utcnow().isoformat()))
+        demo_products = [
+            ('PCM500','100000000001','Paracetamol 500 mg','500 mg','Tablet','Analgesics',0,0,0.35,1.50,30),
+            ('AMX500','100000000002','Amoxicillin 500 mg','500 mg','Capsule','Antibiotics',1,0,0.90,3.50,20),
+            ('LOR10','100000000003','Loratadine 10 mg','10 mg','Tablet','Allergy',0,0,0.50,2.25,15)
+        ]
+        for p in demo_products:
+            conn.execute('''INSERT OR IGNORE INTO products(sku,barcode,name,strength,dosage_form,category,prescription_required,controlled,cost,retail_price,reorder_level)
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?)''', p)
+        conn.commit()
+    except sqlite3.OperationalError as e:
+        if 'database or disk is full' not in str(e).lower():
+            conn.close()
+            raise
+        conn.rollback()
+    finally:
+        conn.close()
 
 def login_required(fn):
     @wraps(fn)
