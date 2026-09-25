@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, session
 from datetime import datetime
-import os, json, threading, sqlite3
+import os, json, threading, sqlite3, shutil
 from migration_core import migrate, ensure_v5_schema
 
 bp5=Blueprint('v5',__name__,url_prefix='/api/v5')
@@ -173,17 +173,28 @@ def register_v5(app,db_fn,audit_fn):
         if not os.path.exists(backup):return jsonify(error='Upload the PHP POS SQL backup first'),400
         if MIGRATION_LOCK.locked():return jsonify(error='Migration already running'),409
         db_path=app.config.get('WESTMED_DB_PATH') or os.environ.get('WESTMED_DB_PATH') or '/data/westmed_v5.db'
+        stage_path=db_path+'.migrating'
         def worker():
             global MIGRATION_STATE
             with MIGRATION_LOCK:
                 try:
-                    MIGRATION_STATE={'phase':'starting','percent':0,'message':'Preparing migration','counts':{}}
+                    MIGRATION_STATE={'phase':'starting','percent':0,'message':'Preparing isolated staging database','counts':{}}
+                    try: os.remove(stage_path)
+                    except FileNotFoundError: pass
+                    if os.path.exists(db_path):
+                        shutil.copy2(db_path,stage_path)
+                    else:
+                        sqlite3.connect(stage_path).close()
                     def prog(s):
                         global MIGRATION_STATE
-                        MIGRATION_STATE={'phase':s.get('phase'),'percent':s.get('percent',0),'message':'Migrating PHP POS data','counts':s.get('counts',{})}
-                    migrate(backup,db_path,prog)
-                    MIGRATION_STATE['message']='Migration completed successfully'
+                        MIGRATION_STATE={'phase':s.get('phase'),'percent':s.get('percent',0),'message':'Migrating PHP POS data into staging database','counts':s.get('counts',{})}
+                    migrate(backup,stage_path,prog)
+                    MIGRATION_STATE={'phase':'switching','percent':100,'message':'Finalizing migrated database','counts':MIGRATION_STATE.get('counts',{})}
+                    os.replace(stage_path,db_path)
+                    MIGRATION_STATE={'phase':'complete','percent':100,'message':'Migration completed successfully','counts':MIGRATION_STATE.get('counts',{})}
                 except Exception as e:
+                    try: os.remove(stage_path)
+                    except Exception: pass
                     MIGRATION_STATE={'phase':'error','percent':0,'message':str(e),'counts':{}}
         threading.Thread(target=worker,daemon=True).start()
         return jsonify(ok=True,started=True)
