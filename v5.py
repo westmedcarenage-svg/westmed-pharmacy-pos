@@ -37,6 +37,7 @@ def register_v5(app,db_fn,audit_fn):
           'current_sales':cur_sales['c'],
           'sales_total':float(hist_sales['total'] or 0)+float(cur_sales['total'] or 0),
           'open_rx':c.execute("SELECT COUNT(*) c FROM prescriptions WHERE status NOT IN ('collected','cancelled')").fetchone()['c'],
+          'expiring_90':c.execute("SELECT COUNT(*) c FROM batches WHERE expiry_date IS NOT NULL AND date(expiry_date)<=date('now','+90 day') AND quantity>0").fetchone()['c'],
           'low_stock':c.execute("""SELECT COUNT(*) c FROM (SELECT p.id,p.reorder_level,COALESCE(SUM(b.quantity),0) q FROM products p LEFT JOIN batches b ON b.product_id=p.id GROUP BY p.id HAVING q<=COALESCE(p.reorder_level,0))""").fetchone()['c']
         };c.close();return jsonify(out)
 
