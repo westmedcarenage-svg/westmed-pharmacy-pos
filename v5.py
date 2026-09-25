@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, session
 from datetime import datetime
+from werkzeug.security import generate_password_hash
 import os, json, threading, sqlite3, shutil
 from migration_core import migrate, ensure_v5_schema
 
@@ -181,10 +182,15 @@ def register_v5(app,db_fn,audit_fn):
                     MIGRATION_STATE={'phase':'starting','percent':0,'message':'Preparing isolated staging database','counts':{}}
                     try: os.remove(stage_path)
                     except FileNotFoundError: pass
-                    if os.path.exists(db_path):
-                        shutil.copy2(db_path,stage_path)
-                    else:
-                        sqlite3.connect(stage_path).close()
+                    sc=sqlite3.connect(stage_path)
+                    sc.row_factory=sqlite3.Row
+                    ensure_v5_schema(sc)
+                    sc.execute("INSERT OR IGNORE INTO stores(code,name,active) VALUES('CAR','Carenage Pharmacy',1)")
+                    store_row=sc.execute("SELECT id FROM stores WHERE code='CAR'").fetchone()
+                    store_id=store_row['id'] if store_row else 1
+                    sc.execute("INSERT OR IGNORE INTO users(username,full_name,role,password_hash,default_store_id,active,created_at) VALUES(?,?,?,?,?,?,?)",
+                               ('admin','Westmed Administrator','admin',generate_password_hash(os.environ.get('ADMIN_PASSWORD','CHANGE-ME')),store_id,1,datetime.utcnow().isoformat()))
+                    sc.commit(); sc.close()
                     def prog(s):
                         global MIGRATION_STATE
                         MIGRATION_STATE={'phase':s.get('phase'),'percent':s.get('percent',0),'message':'Migrating PHP POS data into staging database','counts':s.get('counts',{})}
