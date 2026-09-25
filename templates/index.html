@@ -1,1 +1,54 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Westmed Pharmacy POS</title><link rel="stylesheet" href="/static/styles.css"></head><body><div class="app"><aside><div class="brand">WESTMED</div><div class="subbrand">Pharmacy POS V2</div><nav><button class="active" data-page="dashboard">Dashboard</button><button data-page="pos">Retail POS</button><button data-page="prescriptions">Prescriptions</button><button data-page="inventory">Inventory</button><button data-page="migration">Data Migration</button><button data-page="ai">AI Context</button></nav><a class="logout" href="/logout">Log out</a></aside><main><header><div><h1 id="page-title">Dashboard</h1><div class="muted">{{ user.full_name }} · {{ user.role }}</div></div><select id="store"><option value="1">Carenage Pharmacy</option><option value="2">Store 2</option></select></header><section id="dashboard" class="page active"><div class="cards"><div class="card"><span>Products</span><strong id="m-products">—</strong></div><div class="card"><span>Open Rx</span><strong id="m-rx">—</strong></div><div class="card"><span>Expiring ≤90d</span><strong id="m-exp">—</strong></div><div class="card"><span>Low Stock</span><strong id="m-low">—</strong></div></div><div class="panel"><h2>Two-store pharmacy management</h2><p>Browser-based POS foundation with pharmacist workflow, batch/expiry tracking, migration tools and an AI-ready API.</p></div></section><section id="pos" class="page"><div class="panel"><h2>Retail POS</h2><div class="toolbar"><input id="product-search" placeholder="Search name, SKU or barcode"><button onclick="searchProducts()">Search</button></div><table><thead><tr><th>SKU</th><th>Product</th><th>Stock</th><th>Price</th><th></th></tr></thead><tbody id="product-results"></tbody></table></div></section><section id="prescriptions" class="page"><div class="grid2"><div class="panel"><h2>Prescription Label</h2><div class="form-grid"><label>Patient<input id="rx-patient"></label><label>Rx Number<input id="rx-no"></label><label>Prescriber<input id="rx-prescriber"></label><label>Medicine<input id="rx-drug"></label><label>Quantity<input id="rx-qty" type="number" value="1"></label><label>Refills<input id="rx-refills" type="number" value="0"></label><label class="wide">Directions / SIG<textarea id="rx-sig"></textarea></label><label class="wide">Auxiliary Warning<input id="rx-warning"></label></div><button onclick="createRx()">Create & Preview Label</button><div id="label-preview" class="label-preview">Label preview</div></div><div class="panel"><h2>Pharmacist Queue</h2><div id="rx-list"></div></div></div></section><section id="inventory" class="page"><div class="panel"><h2>Batch / Expiry Inventory</h2><table><thead><tr><th>Store</th><th>SKU</th><th>Product</th><th>Lot</th><th>Expiry</th><th>Qty</th></tr></thead><tbody id="inventory-list"></tbody></table></div></section><section id="migration" class="page"><div class="grid2"><div class="panel"><h2>Migration Status</h2><div id="migration-counts"></div></div><div class="panel"><h2>Import CSV</h2><select id="mig-entity"><option value="products">Products</option><option value="customers">Customers</option><option value="suppliers">Suppliers</option></select><input id="mig-file" type="file" accept=".csv"><button onclick="importCsv()">Import</button><pre id="mig-result"></pre></div></div></section><section id="ai" class="page"><div class="panel"><h2>AI-ready Read-only Context</h2><p>This endpoint is intended for a future permissioned ChatGPT connector.</p><button onclick="loadAI()">Load Context</button><pre id="ai-result"></pre></div></section></main></div><script src="/static/app.js"></script></body></html>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Westmed Pharmacy POS</title><link rel="stylesheet" href="/static/styles.css"></head><body>
+<div class="app">
+<aside><div class="brand">WESTMED</div><div class="subbrand">Pharmacy POS V3</div>
+<nav>
+<button class="active" data-page="dashboard">Dashboard</button>
+<button data-page="pos">Sales / POS</button>
+<button data-page="prescriptions">Prescriptions</button>
+<button data-module="customers">Customers</button>
+<button data-module="items">Items / Products</button>
+<button data-module="suppliers">Suppliers</button>
+<button data-module="receiving">Receiving</button>
+<button data-module="sales-history">Sales History</button>
+<button data-module="reports">Reports</button>
+<button data-module="locations">Locations / Transfers</button>
+<button data-module="employees">Employees & Permissions</button>
+<button data-module="expenses">Expenses</button>
+<button data-module="time-clock">Time Clock</button>
+<button data-module="price-rules">Price Rules</button>
+<button data-module="item-kits">Item Kits</button>
+<button data-module="deliveries">Deliveries</button>
+<button data-module="gift-cards">Gift Cards</button>
+<button data-module="store-config">Store Config</button>
+<button data-page="inventory">Batch / Expiry</button>
+<button data-page="migration">Data Migration</button>
+<button data-page="ai">AI Assistant</button>
+</nav><a class="logout" href="/logout">Log out</a></aside>
+<main>
+<header><div><h1 id="page-title">Dashboard</h1><div class="muted">{{ user.full_name }} · {{ user.role }}</div></div>
+<select id="store"><option value="1">Carenage Pharmacy</option><option value="2">Store 2</option></select></header>
+
+<section id="dashboard" class="page active"><div class="cards">
+<div class="card"><span>Products</span><strong id="m-products">—</strong></div>
+<div class="card"><span>Open Rx</span><strong id="m-rx">—</strong></div>
+<div class="card"><span>Expiring ≤90d</span><strong id="m-exp">—</strong></div>
+<div class="card"><span>Low Stock</span><strong id="m-low">—</strong></div>
+</div><div class="panel"><h2>Westmed Pharmacy Management</h2><p>Two-store retail pharmacy POS with prescription workflow, purchasing, stock control, staff management and migration tools.</p></div></section>
+
+<section id="pos" class="page"><div class="panel"><h2>Retail POS</h2><div class="toolbar"><input id="product-search" placeholder="Search name, SKU or barcode"><button onclick="searchProducts()">Search</button></div><table><thead><tr><th>SKU</th><th>Product</th><th>Stock</th><th>Price</th><th></th></tr></thead><tbody id="product-results"></tbody></table></div></section>
+
+<section id="prescriptions" class="page"><div class="grid2"><div class="panel"><h2>Prescription Label</h2><div class="form-grid">
+<label>Patient<input id="rx-patient"></label><label>Rx Number<input id="rx-no"></label><label>Prescriber<input id="rx-prescriber"></label><label>Medicine<input id="rx-drug"></label>
+<label>Quantity<input id="rx-qty" type="number" value="1"></label><label>Refills<input id="rx-refills" type="number" value="0"></label>
+<label class="wide">Directions / SIG<textarea id="rx-sig"></textarea></label><label class="wide">Auxiliary Warning<input id="rx-warning"></label>
+</div><button onclick="createRx()">Create & Preview Label</button><div id="label-preview" class="label-preview">Label preview</div></div>
+<div class="panel"><h2>Pharmacist Queue</h2><div id="rx-list"></div></div></div></section>
+
+<section id="operations" class="page"><div id="module-content"></div></section>
+
+<section id="inventory" class="page"><div class="panel"><h2>Batch / Expiry Inventory</h2><table><thead><tr><th>Store</th><th>SKU</th><th>Product</th><th>Lot</th><th>Expiry</th><th>Qty</th></tr></thead><tbody id="inventory-list"></tbody></table></div></section>
+
+<section id="migration" class="page"><div class="grid2"><div class="panel"><h2>Migration Status</h2><div id="migration-counts"></div></div><div class="panel"><h2>Import CSV</h2><select id="mig-entity"><option value="products">Products</option><option value="customers">Customers</option><option value="suppliers">Suppliers</option></select><input id="mig-file" type="file" accept=".csv"><button onclick="importCsv()">Import</button><pre id="mig-result"></pre></div></div></section>
+
+<section id="ai" class="page"><div class="panel"><h2>AI-ready Context</h2><p>This read-only endpoint is the first layer for future ChatGPT integration.</p><button onclick="loadAI()">Load Context</button><pre id="ai-result"></pre></div></section>
+</main></div><script src="/static/app.js"></script></body></html>
