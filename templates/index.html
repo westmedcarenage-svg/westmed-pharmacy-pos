@@ -79,11 +79,12 @@
       <div class="sale-search"><input id="product-search" autofocus placeholder="Scan / enter item number or search product"><button onclick="searchProducts()">Search</button></div>
       <table class="data-table"><thead><tr><th>Item #</th><th>Description</th><th>Stock</th><th>Price</th><th></th></tr></thead><tbody id="product-results"></tbody></table>
     </div>
-    <div class="panel cart-panel"><div class="panel-head"><h2>Current Sale</h2><button class="ghost">Clear</button></div>
-      <div class="customer-box"><span>Customer</span><strong>Walk-in Customer</strong><button onclick="openModule('customers')">Select</button></div>
-      <div class="cart-empty">No items added yet</div>
-      <div class="totals"><div><span>Subtotal</span><strong>TTD 0.00</strong></div><div><span>Tax</span><strong>TTD 0.00</strong></div><div class="grand"><span>Total</span><strong>TTD 0.00</strong></div></div>
-      <button class="complete-sale">Complete Sale</button>
+    <div class="panel cart-panel"><div class="panel-head"><h2>Current Sale</h2><button class="ghost" id="clear-cart">Clear</button></div>
+      <div class="customer-box"><span>Customer ID (optional)</span><input id="sale-customer-id" type="number" placeholder="Walk-in"><button onclick="openModule('customers')">Customers</button></div>
+      <div id="cart-items" class="cart-empty">No items added yet</div>
+      <div class="sale-options"><label>Payment<select id="payment-method"><option>Cash</option><option>LINX</option><option>Credit Card</option><option>Debit Card</option><option>Store Account</option></select></label><label>Tax<input id="sale-tax" type="number" step="0.01" value="0"></label></div>
+      <div class="totals"><div><span>Subtotal</span><strong id="cart-subtotal">TTD 0.00</strong></div><div><span>Tax</span><strong id="cart-tax">TTD 0.00</strong></div><div class="grand"><span>Total</span><strong id="cart-total">TTD 0.00</strong></div></div>
+      <button class="complete-sale" id="complete-sale">Complete Sale</button>
     </div>
   </div>
 </section>
@@ -102,7 +103,17 @@
 
 <section id="inventory" class="page"><div class="module-heading"><div><h1>Batch / Expiry</h1><p>Pharmacy lot tracking and expiry monitoring</p></div><span class="status-pill teal">Pharmacy Module</span></div><div class="panel"><table class="data-table"><thead><tr><th>Location</th><th>Item #</th><th>Product</th><th>Lot</th><th>Expiry</th><th>Qty</th></tr></thead><tbody id="inventory-list"></tbody></table></div></section>
 
-<section id="migration" class="page"><div class="module-heading"><div><h1>Data Migration</h1><p>Prepare data from your existing PHP Point of Sale</p></div></div><div class="grid2"><div class="panel"><div class="panel-head"><h2>Migration Status</h2></div><div id="migration-counts"></div></div><div class="panel"><div class="panel-head"><h2>CSV Import</h2></div><select id="mig-entity"><option value="products">Products</option><option value="customers">Customers</option><option value="suppliers">Suppliers</option></select><input id="mig-file" type="file" accept=".csv"><button class="primary" onclick="importCsv()">Import</button><pre id="mig-result"></pre></div></div></section>
+<section id="migration" class="page"><div class="module-heading"><div><h1>Data Migration</h1><p>Import the full PHP Point of Sale SQL backup into Westmed POS V5</p></div><span class="status-pill teal">Persistent Migration</span></div>
+<div class="grid2">
+  <div class="panel"><div class="panel-head"><h2>PHP POS Backup</h2></div>
+    <p class="body-copy">Choose the MySQL .sql backup. V5 uploads it in small chunks to persistent storage, then converts the supported PHP POS tables into the new system.</p>
+    <input id="php-sql-file" type="file" accept=".sql">
+    <div class="migration-actions"><button class="primary" id="upload-sql">Upload Backup</button><button class="primary" id="run-migration">Run Migration</button></div>
+    <div class="progress-wrap"><div id="upload-progress" class="progress-bar"></div></div>
+    <pre id="migration-live-status">Waiting for backup.</pre>
+  </div>
+  <div class="panel"><div class="panel-head"><h2>Migration Status</h2></div><div id="migration-counts"></div><div id="migration-meta"></div></div>
+</div></section>
 
 <section id="ai" class="page"><div class="module-heading"><div><h1>AI Assistant</h1><p>Permissioned management insights for Westmed</p></div></div><div class="panel"><p>Use this area for future ChatGPT queries against inventory, sales, expiry, transfers and purchasing.</p><button class="primary" onclick="loadAI()">Load Current POS Context</button><pre id="ai-result"></pre></div></section>
 </main></div></div>
