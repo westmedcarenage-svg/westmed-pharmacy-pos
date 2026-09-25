@@ -186,12 +186,28 @@ def init_db():
                             VALUES(?,?,?,?,?,?,?,?,?,?,?)''', p)
         conn.commit()
     except sqlite3.OperationalError as e:
-        if 'database or disk is full' not in str(e).lower():
+        msg=str(e).lower()
+        if 'database disk image is malformed' in msg or 'file is not a database' in msg:
+            try: conn.close()
+            except Exception: pass
+            for suffix in ['', '-wal', '-shm', '-journal']:
+                try: os.remove(DB_PATH+suffix)
+                except FileNotFoundError: pass
+            conn=sqlite3.connect(DB_PATH); conn.row_factory=sqlite3.Row
+            conn.executescript(SCHEMA)
+            conn.execute("INSERT OR IGNORE INTO stores(code,name) VALUES('CAR','Carenage Pharmacy')")
+            conn.execute("INSERT OR IGNORE INTO stores(code,name) VALUES('ST2','Store 2')")
+            store=conn.execute("SELECT id FROM stores WHERE code='CAR'").fetchone()['id']
+            conn.execute("INSERT OR IGNORE INTO users(username,full_name,role,password_hash,default_store_id,created_at) VALUES(?,?,?,?,?,?)",
+                         ('admin','Westmed Administrator','admin',generate_password_hash(os.environ.get('ADMIN_PASSWORD','CHANGE-ME')),store,datetime.utcnow().isoformat()))
+            conn.commit(); conn.close(); return
+        if 'database or disk is full' not in msg:
             conn.close()
             raise
         conn.rollback()
     finally:
-        conn.close()
+        try: conn.close()
+        except Exception: pass
 
 def login_required(fn):
     @wraps(fn)
