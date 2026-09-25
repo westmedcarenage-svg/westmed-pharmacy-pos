@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3, os, csv, io
 from datetime import datetime
 from functools import wraps
+from v3 import register_v3
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get('WESTMED_DB_PATH', os.path.join(BASE_DIR, 'westmed_pos.db'))
@@ -320,6 +321,7 @@ def ai_context():
 def health(): return jsonify(status='ok',app='Westmed Pharmacy POS V2')
 
 init_db()
+register_v3(app, db, audit)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT','5000')), debug=False)
