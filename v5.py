@@ -195,7 +195,14 @@ def register_v5(app,db_fn,audit_fn):
                         global MIGRATION_STATE
                         MIGRATION_STATE={'phase':s.get('phase'),'percent':s.get('percent',0),'message':'Migrating PHP POS data into staging database','counts':s.get('counts',{})}
                     migrate(backup,stage_path,prog)
-                    MIGRATION_STATE={'phase':'switching','percent':100,'message':'Finalizing migrated database','counts':MIGRATION_STATE.get('counts',{})}
+                    check=sqlite3.connect(stage_path)
+                    integrity=check.execute("PRAGMA integrity_check").fetchone()[0]
+                    check.close()
+                    if integrity!='ok':
+                        raise RuntimeError('Migrated staging database failed integrity check: '+str(integrity))
+                    stage_size=os.path.getsize(stage_path)
+                    if stage_size>470*1024*1024:
+                        raise RuntimeError('Migrated database is too large for the current 500 MB Railway volume. Size: %.1f MB' % (stage_size/1024/1024))
                     MIGRATION_STATE={'phase':'switching','percent':100,'message':'Freeing backup space and promoting migrated database','counts':MIGRATION_STATE.get('counts',{})}
                     try:
                         os.remove(backup)
