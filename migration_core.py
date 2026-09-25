@@ -7,6 +7,60 @@ RELEVANT={
 'phppos_giftcards','phppos_expenses','phppos_employees_time_clock','phppos_sales_deliveries','phppos_registers','phppos_register_log','phppos_app_config'
 }
 
+BASE_SCHEMA = """
+PRAGMA foreign_keys = OFF;
+CREATE TABLE IF NOT EXISTS stores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT UNIQUE NOT NULL, name TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, full_name TEXT NOT NULL,
+  role TEXT NOT NULL, password_hash TEXT NOT NULL, default_store_id INTEGER, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS products (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, sku TEXT UNIQUE NOT NULL, barcode TEXT, name TEXT NOT NULL,
+  strength TEXT, dosage_form TEXT, category TEXT, prescription_required INTEGER NOT NULL DEFAULT 0,
+  controlled INTEGER NOT NULL DEFAULT 0, cost REAL NOT NULL DEFAULT 0, retail_price REAL NOT NULL DEFAULT 0,
+  reorder_level REAL NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS batches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER NOT NULL, store_id INTEGER NOT NULL,
+  lot_number TEXT NOT NULL, expiry_date TEXT, quantity REAL NOT NULL DEFAULT 0, unit_cost REAL NOT NULL DEFAULT 0,
+  received_at TEXT, UNIQUE(product_id,store_id,lot_number)
+);
+CREATE TABLE IF NOT EXISTS customers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, customer_no TEXT UNIQUE, full_name TEXT NOT NULL, phone TEXT, email TEXT, dob TEXT, notes TEXT
+);
+CREATE TABLE IF NOT EXISTS suppliers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, supplier_code TEXT UNIQUE, name TEXT NOT NULL, phone TEXT, email TEXT, terms TEXT
+);
+CREATE TABLE IF NOT EXISTS prescriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, rx_number TEXT UNIQUE NOT NULL, store_id INTEGER NOT NULL, customer_id INTEGER,
+  patient_name TEXT NOT NULL, prescriber TEXT, status TEXT NOT NULL DEFAULT 'new', pharmacist_user_id INTEGER,
+  created_at TEXT NOT NULL, checked_at TEXT
+);
+CREATE TABLE IF NOT EXISTS prescription_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, prescription_id INTEGER NOT NULL, product_id INTEGER, drug_name TEXT NOT NULL,
+  sig TEXT NOT NULL, quantity REAL NOT NULL, refills INTEGER NOT NULL DEFAULT 0, auxiliary_warning TEXT, label_printed_at TEXT
+);
+CREATE TABLE IF NOT EXISTS sales (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, sale_no TEXT UNIQUE NOT NULL, store_id INTEGER NOT NULL, user_id INTEGER NOT NULL,
+  customer_id INTEGER, subtotal REAL NOT NULL DEFAULT 0, discount REAL NOT NULL DEFAULT 0, tax REAL NOT NULL DEFAULT 0,
+  total REAL NOT NULL DEFAULT 0, payment_method TEXT, created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sale_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, sale_id INTEGER NOT NULL, product_id INTEGER NOT NULL, batch_id INTEGER,
+  quantity REAL NOT NULL, unit_price REAL NOT NULL, cost REAL NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS stock_transfers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, transfer_no TEXT UNIQUE NOT NULL, from_store_id INTEGER NOT NULL, to_store_id INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft', created_by INTEGER NOT NULL, created_at TEXT NOT NULL, received_at TEXT
+);
+CREATE TABLE IF NOT EXISTS audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT NOT NULL, entity_type TEXT, entity_id TEXT, details TEXT, created_at TEXT NOT NULL
+);
+"""
+
+
 def iter_tuples(s):
     i=0;n=len(s)
     while i<n:
@@ -68,6 +122,7 @@ def schemas_from_dump(path):
     return cols
 
 def ensure_v5_schema(conn):
+    conn.executescript(BASE_SCHEMA)
     conn.executescript("""
     PRAGMA foreign_keys=OFF;
     CREATE TABLE IF NOT EXISTS v5_sales_history(sale_id INTEGER PRIMARY KEY,sale_time TEXT,customer_id INTEGER,customer_name TEXT,employee_id INTEGER,employee_name TEXT,sold_by_employee_id INTEGER,sold_by_name TEXT,comment TEXT,payment_type TEXT,deleted INTEGER,suspended INTEGER,location_id INTEGER,location_name TEXT,register_id INTEGER,total_quantity REAL,subtotal REAL,tax REAL,total REAL,profit REAL,return_sale_id INTEGER,tip REAL);
