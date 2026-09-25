@@ -96,8 +96,8 @@ def ensure_v5_schema(conn):
 
 def migrate(sql_path, db_path, progress=None):
     started=time.time(); cols=schemas_from_dump(sql_path)
-    conn=sqlite3.connect(db_path);conn.row_factory=sqlite3.Row
-    conn.execute('PRAGMA journal_mode=OFF');conn.execute('PRAGMA synchronous=OFF');conn.execute('PRAGMA temp_store=MEMORY')
+    conn=sqlite3.connect(db_path, timeout=120);conn.row_factory=sqlite3.Row
+    conn.execute('PRAGMA busy_timeout=120000');conn.execute('PRAGMA journal_mode=MEMORY');conn.execute('PRAGMA synchronous=OFF');conn.execute('PRAGMA temp_store=MEMORY')
     ensure_v5_schema(conn)
     for t in ['v5_sales_history','v5_sale_items','v5_sale_payments','v5_receivings_history','v5_receiving_items','v5_employees','v5_price_rules','v5_item_kits','v5_item_kit_items','v5_giftcards','v5_expenses','v5_time_clock','v5_deliveries','v5_registers','v5_register_log','v5_app_config']:
         conn.execute(f'DELETE FROM {t}')
