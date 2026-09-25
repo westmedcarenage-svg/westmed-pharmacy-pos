@@ -173,7 +173,7 @@ def register_v5(app,db_fn,audit_fn):
         if not os.path.exists(backup):return jsonify(error='Upload the PHP POS SQL backup first'),400
         if MIGRATION_LOCK.locked():return jsonify(error='Migration already running'),409
         db_path=app.config.get('WESTMED_DB_PATH') or os.environ.get('WESTMED_DB_PATH') or '/data/westmed_v5.db'
-        stage_path=db_path+'.migrating'
+        stage_path='/tmp/westmed_v5_migrating.db'
         def worker():
             global MIGRATION_STATE
             with MIGRATION_LOCK:
@@ -190,7 +190,16 @@ def register_v5(app,db_fn,audit_fn):
                         MIGRATION_STATE={'phase':s.get('phase'),'percent':s.get('percent',0),'message':'Migrating PHP POS data into staging database','counts':s.get('counts',{})}
                     migrate(backup,stage_path,prog)
                     MIGRATION_STATE={'phase':'switching','percent':100,'message':'Finalizing migrated database','counts':MIGRATION_STATE.get('counts',{})}
-                    os.replace(stage_path,db_path)
+                    MIGRATION_STATE={'phase':'switching','percent':100,'message':'Freeing backup space and promoting migrated database','counts':MIGRATION_STATE.get('counts',{})}
+                    try:
+                        os.remove(backup)
+                    except FileNotFoundError:
+                        pass
+                    for suffix in ['', '-wal', '-shm', '-journal']:
+                        try: os.remove(db_path+suffix)
+                        except FileNotFoundError: pass
+                    shutil.copy2(stage_path,db_path)
+                    os.remove(stage_path)
                     MIGRATION_STATE={'phase':'complete','percent':100,'message':'Migration completed successfully','counts':MIGRATION_STATE.get('counts',{})}
                 except Exception as e:
                     try: os.remove(stage_path)
